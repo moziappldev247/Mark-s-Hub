@@ -1,0 +1,96 @@
+Sub Registration_Rev()
+
+Dim strFilename As String: strFilename = "C:\Users\jraven\My Documents\mtpsv1\calendar_idv1.0\calendar_idv1.05.xlsb"
+Dim qt As QueryTable
+Dim nRow As Long, nlst As Long, krow As Long
+Dim rngR As Range, rngT As Range, ddue As Range
+Dim wb As Workbook
+Dim wbc As Workbook
+Dim ws As Worksheet
+Dim dm As Object
+Dim rcl As ListObject
+Dim tcl As ListObject
+Dim obj As ListObject
+
+'EmployeeProfile Parameters
+    Set wb = ThisWorkbook
+    Set rg = wb.Sheets("Regulatory")
+    Set regr = wb.Sheets("Regulatory Registration")
+    Set tc = wb.Sheets("Technical")
+    Set techr = wb.Sheets("Tech Registration")
+Application.ScreenUpdating = False
+regr.Activate
+    With regr.ListObjects("regulatory_register_list") 'Clear the old regulatory transcript records in the employeeprofile_idv1.05
+        If Not .DataBodyRange Is Nothing Then
+            .DataBodyRange.ClearContents
+        End If
+    End With
+rg.Activate
+    With rg 'Get the regulatory transcripts spreadsheet and sort the table parameters to "new" and "needed"
+             nRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+                Set rngR = rg.Range("A1", Cells(nRow, "K"))
+                    rngR.AutoFilter Field:=12, _
+                        Criteria1:=Array("Needed", "New"), _
+                            Operator:=xlFilterValues
+                        rngR.Offset(1, 0).Resize(rngR.Rows.Count - 1, _
+                    rngR.Columns.Count).Copy Destination:=regr.Range("A2")
+                Application.CutCopyMode = False
+    End With
+        For Each rcl In rg.ListObjects 'Clears the autofilter
+            rcl.AutoFilter.ShowAllData
+                Next rcl
+tc.Activate
+    With tc 'Get the technical transcripts spreadsheet and sort the table parameters to "needed"
+             nRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+                Set rngT = tc.Range("A1", Cells(nRow, "K"))
+                    rngT.AutoFilter Field:=11, _
+                        Criteria1:="Needed", _
+                            Operator:=xlFilterValues
+                        rngT.Offset(1, 0).Resize(rngT.Rows.Count - 1, _
+                    rngT.Columns.Count).Copy Destination:=techr.Range("A2")
+                Application.CutCopyMode = False
+    End With
+        For Each tcl In tc.ListObjects 'Clears the autofilter
+            tcl.AutoFilter.ShowAllData
+                Next tcl
+'Calender
+    Set wbc = Workbooks.Open(Filename:=strFilename)
+            Set rl = wbc.Sheets("Reg Register List")
+                Set tl = wbc.Sheets("Tech Register List")
+tl.Activate
+    With tl.ListObjects("tech_register_list") 'Clear the old technical transcript records in the calendar_idv1.05
+        If Not .DataBodyRange Is Nothing Then
+            .DataBodyRange.ClearContents
+        End If
+    End With
+techr.Activate
+    With techr 'Update the "tech_register_list" data model with new technical transcript records
+             nRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+                Set rngTLC = techr.Range("A1", Cells(nRow, "K"))
+                        rngTLC.Offset(1, 0).Resize(rngTLC.Rows.Count - 1, _
+                    rngTLC.Columns.Count).Copy Destination:=tl.Range("A2")
+                Application.CutCopyMode = False
+    End With
+rl.Activate
+    With rl.ListObjects("reg_register_list") 'Clear the old regulatory transcript records in the calendar_idv1.05
+        If Not .DataBodyRange Is Nothing Then
+            .DataBodyRange.ClearContents
+        End If
+    End With
+regr.Activate
+    With regr 'Update the "reg_reglister_list" data model with new regulatory transcript records
+            nRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+                Set rngRLC = regr.Range("A1", Cells(nRow, "N"))
+                        Set rt = rl.Range("A2:K5000").Resize(rngRLC.Rows.Count)
+                    rt.Value2 = rngRLC.Offset(1, 0).Value2
+                Application.CutCopyMode = False
+            regr.Visible = x1Hidden
+    End With
+rl.Activate
+    rl.Range("A2").End(xlDown).Offset(1, 0).Select 'Required to update the regulatory and technical data models
+        wbc.RefreshAll
+            Application.ScreenUpdating = True
+                wb.Close SaveChanges:=True
+                    rl.Visible = x1Hidden
+End Sub
+
